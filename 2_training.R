@@ -6,8 +6,8 @@ cat(paste("Run started:", Sys.time(), sep = " "))
 #---------------------------
 cat("Starting preprocessing...\n")
 
-source("3_code/1_preprocessing.R")
-#load("3_code/processed_data.RData")
+#source("fairCreditScoring/1_preprocessing.R")
+load("3_wipResults/processedData.RData")
 
 packages <- c("caret", "doParallel", "kernlab", "randomForest", "nnet", 
               "xgboost", "foreach", "e1071", "pROC")
@@ -16,7 +16,7 @@ rm(packages)
 
 #---------------------------
 # Loop through all FAIR PREPROCESSING algorithms (e.g. unawareness --> write output, independence ...)
-#source("3_code/)
+#source("")
 
 #---------------------------
 # Loop FAIR OTT cost functions
