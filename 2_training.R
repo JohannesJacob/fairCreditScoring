@@ -15,8 +15,8 @@ sapply(packages, require, character.only = TRUE)
 rm(packages)
 
 #---------------------------
-# Loop through all FAIR PREPROCESSING algorithms (e.g. unawareness --> write output, independence ...)
-#source("")
+# PREPROCESSING
+source("fairCreditScoring/11_FairUnawareness.R")
 
 #---------------------------
 # Loop FAIR OTT cost functions
