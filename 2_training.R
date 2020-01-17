@@ -16,7 +16,8 @@ rm(packages)
 
 #---------------------------
 # PREPROCESSING
-source("fairCreditScoring/11_FairUnawareness.R")
+#source("fairCreditScoring/11_FairUnawareness.R")
+
 
 #---------------------------
 # Loop FAIR OTT cost functions

@@ -29,4 +29,9 @@ df$OLDER_62 <- as.factor(ifelse((df$DAYS_BIRTH/365)>62, '1', '0'))
 table(df$TARGET, df$OLDER_62)
 t.test(df$TARGET~ df$OLDER_62)
 
+# NA analysis
+na_count <-sapply(test, function(y) sum(length(which(is.na(y)))))
+na_count <- data.frame(na_count)
+na_count$var <- rownames(na_count)
+noNA_columns <- rownames(na_count[na_count$na_count==0,])
 

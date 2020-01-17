@@ -21,3 +21,11 @@ unaware <- c(rownames(unaware), sens_attr)
 tr_te <- tr_te[,!(colnames(tr_te) %in% unaware)]
 
 rm(cor.tr_te)
+
+#lm to confirm corr results
+
+#exclude NA for lm (see 0_descriptive.R)
+#test <- as.data.frame(tr_te)
+#lm <- lm(test$CODE_GENDER~., data = test[,noNA_columns])
+#summary(lm)
+#Results confirm correlation
