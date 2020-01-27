@@ -10,8 +10,9 @@ df <- read.csv("2_raw data/German credit scoring data/german.data", sep = " ", h
 colnames(df) <- c("CHECKING_ACC","DURATION_M", "CREDIT_HIST", "PURPOSE", "AMOUNT", "SAVING_ACC", "EMPLOY_SINCE", "RATE2INCOME", "SEX AND STATUS", "GUARANTORS", 
                   "RESIDENT_SINCE", "PROPERTY", "AGE", "OTHER_INSTALMNT", "HOUSING", "NUMBR_CREDIT", "JOB", "DEPENDENTS", "PHONE", "FOREIGNER", "TARGET")
 
-df$TARGET <- as.factor(df$TARGET)
+df$TARGET <- as.factor(ifelse(df$TARGET==1, "GOOD", "BAD"))
 df$GENDER_NEW <- as.factor(ifelse(df$`SEX AND STATUS` == 'A92' | df$`SEX AND STATUS` == 'A95', "f", "m"))
+df <- df[, -9]
 df$SQ_AGE_NEW <- sqrt(df$AGE)
 
 # - training
@@ -24,30 +25,25 @@ rm(packages)
 #---------------------------
 # PREPROCESSING
 
-source("assignmentSummaryFUN.R")
+
 
 #---------------------------
 cat("Preparing data...\n")
 
 #Select subset for training and testing
-tr_te <- tr_te[tri, ] #kick kaggle test set
-trainIndex <- createDataPartition(y, times= 2, p = 0.6, list = FALSE) 
-dtrain <- tr_te[trainIndex,]
-dval <- tr_te[-trainIndex,]
-dt 
-ytrain <- factor(y[trainIndex], levels=c("0","1"), labels=c("rejected","accepted"))
-yval <- factor(y[-trainIndex], levels=c("0","1"), labels=c("rejected","accepted"))
-yt
-
-rm(tr_te, y, tri, trainIndex); gc()
+trainIndex <- createDataPartition(df$TARGET, p = 0.9, list = FALSE) 
+dtrain <- df[trainIndex,]
+dval <- df[-trainIndex,]
+rm(trainIndex)
 
 #set trainControl for caret
+source("fairCreditScoring/97_germanCreditSummary.R")
 model.control <- trainControl(
   method = "repeatedcv",
   number = 10,
   repeats = 3,
   classProbs = TRUE,
-  summaryFunction = twoClassSummary, #specific FAIR summary metric
+  summaryFunction = creditSummary, #specific FAIR summary metric
   returnData = FALSE #FALSE, to reduce straining memomry 
 )
 
@@ -92,10 +88,12 @@ nrOfCores  <- detectCores()-1
 message(paste("\n Registered number of cores for parallel processing:\n",nrOfCores,"\n"))
 
 # Create vector of model names to call parameter grid in for-loop
-model.names <- c(#"glm",
-  #"svmRadial", "rf", 
+model.names <- c(
+  "glm",
+  "svmRadial", 
+  "rf", 
   "xgbTree"
-  #, "nnet"
+  , "nnet"
 )
 
 # Train models and save result to model."name"
@@ -103,11 +101,11 @@ for(i in model.names) {
   print(i)
   grid <- get(paste("param.", i, sep = ""))
   
-  args.train <- list(x = dtrain, 
-                     y = ytrain,  
+  args.train <- list(TARGET~., 
+                     data = dtrain,  
                      method = i, 
                      #tuneGrid  = grid,
-                     #metric    = "Accuracy", #needs to be changed depeding on cost function
+                     metric    = "Loss", #needs to be changed depeding on cost function
                      trControl = model.control)
   
   args.model <- c(args.train, get(paste("args.", i, sep = "")))
@@ -124,54 +122,15 @@ for (i in model.names){rm(list=c(paste0('args.',i), paste0('param.',i)))};gc()
 
 
 #---------------------------
-cat("Validating model and setting optimal threshold...\n")
+cat("Testing model...\n")
 
-thresholds <- NULL
+#Print assessment results of level-0-models
+test_results <- NULL
+obs <- dval$TARGET
 for(i in model.names){
-  model <- get(paste("model.", i, sep = ""))
-  
-  assign(
-    paste("pred.", i, sep = ""),
-    predict(model,
-            newdata = dval,
-            type = "prob")[,2])
-  
-  result.roc <- roc(yval, get(paste("pred.", i, sep = ""))) # Draw ROC curve.
-  result.coords <- coords(result.roc, "best", best.method="closest.topleft", ret=c("threshold", "accuracy"))
-  
-  
-  thresholds <- cbind(thresholds, result.coords[[1]])
-  
-  print(paste(i, "Validation prediction completed:", Sys.time(), sep = " "))
+  pred <- predict(get(paste("model.", i, sep = "")), newdata = dval)
+  test_eval <- rbind(as.numeric(roc(obs, as.numeric(pred))$auc), max(get(paste("model.", i, sep = ""))$results$Loss))
+  test_results <- cbind(test_results, test_eval)
 }
 
-colnames(thresholds) <- c(model.names)
-thresholds <- as.data.frame(thresholds)
-
-#---------------------------
-cat("Final prediction...\n")
-
-AUCs <- NULL
-for(i in model.names){
-  model <- get(paste("model.", i, sep = ""))
-  model.threshold <- thresholds[[paste0(i)]]
-  
-  assign(
-    paste("pred.", i, sep = ""),
-    predict(model,
-            newdata = dt,
-            type = "prob")[,2])
-  model.prediction <- get(paste("pred.", i, sep = ""))
-  
-  result.roc <- roc(yt, model.prediction) # Draw ROC curve.
-  result <- ifelse(model.prediction>model.threshold, 1, 0)
-  
-  
-  AUCs <- cbind(AUCs, auc(yt, result))
-  
-  print(paste(i, "Testing results completed:", Sys.time(), sep = " "))
-}
-
-# Average of AUC
-finalAUC <- rowSums(AUCs)/ncol(AUCs)
-cat(paste("The final AUC is", finalAUC))
+colnames(test_results) <- model.names; test_results
