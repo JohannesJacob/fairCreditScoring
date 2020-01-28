@@ -13,24 +13,74 @@ df$GENDER_NEW <- as.factor(ifelse(df$`SEX AND STATUS` == 'A92' | df$`SEX AND STA
 df <- df[, -9]
 df$SQ_AGE_NEW <- sqrt(df$AGE)
 
-# INDEPENDENCE __ PREPROCESSING
+# Dummy variables for multinomial variables
+for (i in 1:ncol(df)){
+  c <- df[,i]
+  if (is.factor(c)&length(levels(c))>2){
+    dum <- model.matrix(~c)
+    colnames(dum) <- paste(names(df)[i], levels(c), sep="_")
+  }
+}
+# - mulinomial predict function
+predictMNL <- function(model, newdata) {
+  
+  # Only works for neural network models
+  if (is.element("nnet",class(model))) {
+    # Calculate the individual and cumulative probabilities
+    probs <- predict(model,newdata,"probs")
+    cum.probs <- t(apply(probs,1,cumsum))
+    
+    # Draw random values
+    vals <- runif(nrow(newdata))
+    
+    # Join cumulative probabilities and random draws
+    tmp <- cbind(cum.probs,vals)
+    
+    # For each row, get choice index.
+    k <- ncol(probs)
+    ids <- 1 + apply(tmp,1,function(x) length(which(x[1:k] < x[k+1])))
+    
+    # Return the values
+    return(ids)
+  }
+}
 
+
+# INDEPENDENCE __ PREPROCESSING
+library(nnet)
 #	1. For each x predict x' depending on a, if x is continuous use regression, binary use logistic and for count use poisson. Also integrate the already predicted x'.
 target <- df$TARGET
-a <- df$GENDER_NEW
-df <- df[, -which(colnames(df)%in%c("TARGET", "GENDER_NEW"))]
-fam <- c("multinom", "gaussian", "multinom", "multinom", "multinom", ...)
-vec <- 1:ncol(df)
+df <- df[, -which(colnames(df)%in%c("TARGET"))]
+fam <- c("multinom", "gaussian", "multinom", "multinom", "gaussian", "multinom", "multinom", )
 
+vec <- 1:ncol(df)
 for (i in 1:ncol(df)){
-  M <- data.frame()
+  M <- df
+  x <- NULL
   for (j in vec){
+    
+    y <- colnames(M[j]); if(y=="GENDER_NEW"){next}
+    a <- "GENDER_NEW"
+    f <- as.formula(paste(y, "~", paste(c(a,x), collapse="+")))
+    
+    
     if (fam[j]=="multinom") {
-      m <- multinom(formula = , data = )
+      m <- multinom(formula = f, data = M)
+      yhat <- predictMNL(m, M)
+      t <- unique(M[,j])[match(as.character(yhat), as.character(as.numeric(unique(M[,j]))))]
+    } else {
+      m <- glm(formula = f, data = M, family = fam[j])
+      yhat <- predict(m)
     }
-    xhat <- predict(m)
-    M <- cbind(M, xhat)
+    
+    M <- cbind(M, yhat)
+    xhat_name <- colnames(M)[ncol(M)] <- paste0(y, "_hat")
+    
+    if(length(unique(yhat))){next}
+    x <- c(x, xhat_name)
   }
+  break
+  M <- M[22:42]
   collo = NULL; for (f in vec){collo <- c(collo, colnames(df[f]))}
   colnames(M) <- collo
   assign(paste0("M", i), M)
