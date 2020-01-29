@@ -24,7 +24,10 @@ rm(packages)
 
 #---------------------------
 # PREPROCESSING
-source("fairCreditScoring/13_independencePRE.R")
+#source("fairCreditScoring/13_independencePRE.R")
+
+# OTT
+source("fairCreditScoring/14_independenceOTT.R")
 
 
 #---------------------------
@@ -32,7 +35,7 @@ cat("Preparing data...\n")
 
 #Select subset for training and testing
 trainIndex <- createDataPartition(df$TARGET, p = 0.9, list = FALSE) 
-dtrain <- df[trainIndex,]
+dtrain <- df[trainIndex,] #; dtrain <- balancedData(dtrain) # Independence OTT
 dval <- df[-trainIndex,]
 rm(trainIndex)
 

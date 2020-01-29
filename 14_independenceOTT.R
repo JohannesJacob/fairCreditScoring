@@ -1,16 +1,18 @@
 # INDEPENDENCE OTT - REWEIGHTING
 
 # 1. Reweighing
-reweight = NULL
-for (i in 1:nrow(dtrain)){
-  sex = as.character(dtrain[i, "GENDER_NEW"])
-  y = as.character(dtrain[i, "TARGET"])
+balancedData <- function(trainData){
+  reweight = NULL
+  for (i in 1:nrow(trainData)){
+    sex = as.character(trainData[i, "GENDER_NEW"])
+    y = as.character(trainData[i, "TARGET"])
+    
+    sexratio <- nrow(trainData[trainData$GENDER_NEW==sex,])/nrow(trainData)
+    yratio <- nrow(trainData[trainData$TARGET==y,])/nrow(trainData)
+    actual <- nrow(trainData[trainData$TARGET==y&trainData$GENDER_NEW==sex,])/nrow(trainData)
+    reweight <- rbind(reweight, (sexratio*yratio/actual))
+  }
   
-  sexratio <- nrow(dtrain[dtrain$GENDER_NEW==sex,])/nrow(dtrain)
-  yratio <- nrow(dtrain[dtrain$TARGET==y,])/nrow(dtrain)
-  actual <- nrow(dtrain[dtrain$TARGET==y&dtrain$GENDER_NEW==sex,])/nrow(dtrain)
-  reweight <- rbind(reweight, (sexratio*yratio/actual))
+  return(dplyr::sample_n(trainData, nrow(trainData), replace = T, weight = reweight))
 }
-
-sample_idx <- dplyr::sample_n(dtrain, nrow(dtrain), replace = T, weight = reweight)
 
