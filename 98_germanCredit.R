@@ -24,7 +24,7 @@ rm(packages)
 
 #---------------------------
 # PREPROCESSING
-
+source("fairCreditScoring/13_independencePRE.R")
 
 
 #---------------------------

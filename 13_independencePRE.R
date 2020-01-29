@@ -105,6 +105,8 @@ M_mean$TARGET <- target
 
 df <- M_mean; rm(M_mean)
 
+# - IF I LEAVE IT LIKE THIS, TEST DATA NEEDS TO BE TRANSFORMED AS WELL
+
 # Average factors
 #cols <- colnames(M_mean)
 #for (c in cols){
