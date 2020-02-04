@@ -24,7 +24,7 @@ rm(packages)
 
 #---------------------------
 # PREPROCESSING
-#source("fairCreditScoring/13_independencePRE.R")
+source("fairCreditScoring/13_independencePRE.R")
 
 # OTT
 source("fairCreditScoring/14_independenceOTT.R")
@@ -137,3 +137,4 @@ for(i in model.names){
 }
 
 colnames(test_results) <- model.names; test_results
+

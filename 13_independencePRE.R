@@ -66,21 +66,20 @@ for (i in c(1:19, 21)){
       m <- multinom(formula = f, data = M, trace=F)
       yhat <- predictMNL(m, M)
       yhat <- as.numeric(unique(M[,j])[match(as.character(yhat), as.character(as.numeric(unique(M[,j]))))])
-    } else if (fam[j]=="binomial"){
-      m <- glm(formula = f, data = M, family = fam[j])
-      yhat <- predict(m, type = "response")
-    } else {
+    } else if (fam[j]=="gaussian"){
       m <- glm(formula = f, data = M, family = fam[j])
       yhat <- predict(m)
+    } else {
+      m <- glm(formula = f, data = M, family = fam[j])
+      yhat <- predict(m, type = "response")
     }
     
     M <- cbind(M, yhat)
-    xhat_name <- colnames(M)[ncol(M)] <- y
-    
-    if(length(unique(yhat))){next}
+    xhat_name <- colnames(M)[ncol(M)] <- paste0(y,"_hat")
     x <- c(x, xhat_name)
   }
   M <- M[, 22:41]
+  colnames(M) <-  sub("_hat", "", colnames(M))
   M <- M[, order(colnames(M))]
   assign(paste0("M", i), M)
   vec <- c(vec, i); vec <- vec[2:length(vec)]
