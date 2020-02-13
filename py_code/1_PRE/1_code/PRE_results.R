@@ -15,7 +15,11 @@ rm(packages)
 # - read data set (see Fairness Definitions Explained)
 
 dval <- read.csv("fairCreditScoring/py_code/1_PRE/2_output/pre_test.csv")
-dtrain <- read.csv("fairCreditScoring/py_code/1_PRE/2_output/pre_reweighing2.csv")
+dtrain <- read.csv("fairCreditScoring/py_code/1_PRE/2_output/pre_lfr.csv")
+
+# check fairness in training set
+source("fairCreditScoring/95_fairnessMetrics.R")
+statParDiff(data = dtrain, sens.attr = 'sex', target.attr = 'credit')
 
 #set trainControl for caret
 source("fairCreditScoring/96_empSummary.R")
@@ -32,10 +36,10 @@ model.control <- trainControl(
 # Create vector of model names to call parameter grid in for-loop
 model.names <- c(
   "glm",
-  "svmRadial"#, 
-  #"rf", 
-  #"xgbTree"
-  #, "nnet"
+  "svmRadial", 
+  "rf", 
+  "xgbTree"
+  , "nnet"
 )
 
 # Train models and save result to model."name"
@@ -111,10 +115,9 @@ for(i in model.names){
   profitPerLoan <- profit/nrow(dval)
   
   # fairness criteria average
-  statPar <- dem_parity(data = df_cutoff, group ='sex',probs = pred, preds ='class', base ='Male')
-  statParDiff <- statPar$Metric[4] - statPar$Metric[2]
+  statParityDiff <- statParDiff(data = df_cutoff, sens.attr = 'sex', target.attr = 'class')
   
-  test_eval <- rbind(AUC, EMP, acceptedLoans, profit, profitPerLoan, statParDiff)
+  test_eval <- rbind(AUC, EMP, acceptedLoans, profit, profitPerLoan, statParityDiff)
   test_results <- cbind(test_results, test_eval)
 }
 
@@ -130,14 +133,13 @@ for (i in 1:nrow(dval)){
 profit <- sum(loanprofit)
 profitPerLoan <- profit/nrow(dval)
 
-statPar <- dem_parity(data = dval, group ='sex',probs = NULL, preds ='credit', base ='Male')
-statParDiff <- statPar$Metric[4] - statPar$Metric[2]
+statParityDiff <- statParDiff(data = dval, sens.attr = 'sex', target.attr = 'credit')
 
-test_eval <- rbind(AUC, EMP, acceptedLoans, profit, profitPerLoan, statParDiff)
+test_eval <- rbind(AUC, EMP, acceptedLoans, profit, profitPerLoan, statParityDiff)
 test_results <- cbind(test_eval, test_results)
 
 rm(acceptedLoans, AUC, class_label, cutoff, cutoff_label, EMP, i, loanprofit, obs, p, pred, 
-   profit, profitPerLoan, statPar, statParDiff, true_label, test_eval)
+   profit, profitPerLoan, statParityDiff, true_label, test_eval)
 
 # Print results
 colnames(test_results) <- c("base", model.names); test_results
