@@ -83,6 +83,9 @@ for m in methods:
         out = dataset_transf_train.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True)[0]
        
     elif m == "disp_impact_remover":     
+        # Test if scaling changes something --> but then also export a scaled test set
+        # scaler = MinMaxScaler(copy=False)
+        
         di = DisparateImpactRemover(repair_level=1, sensitive_attribute='AGE')
         dataset_transf_train = di.fit_transform(dataset_orig_train)
         out = dataset_transf_train.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True)[0]
