@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PREPROCESSING: REWEIGHING
+PREPROCESSING
 Created on Mon Feb  3 14:47:12 2020
 
 The custom pre-processing function is adapted from
@@ -14,20 +14,15 @@ import sys
 sys.path.append("../")
 sys.path.append("C:\\Users\\Johannes\\OneDrive\\Dokumente\\Humboldt-Universität\\Msc WI\\1_4. Sem\\Master Thesis II\\fairCreditScoring\\py_code\\1_PRE\\1_code")
 import numpy as np
-from tqdm import tqdm
 
 from load_germandata import load_GermanDataset
 from load_taiwandata import load_TaiwanDataset
 from load_gmscdata import load_GMSCDataset
 
 from aif360.metrics import BinaryLabelDatasetMetric
-from aif360.metrics import ClassificationMetric
 from aif360.algorithms.preprocessing.reweighing import Reweighing
 from aif360.algorithms.preprocessing.lfr import LFR
 from aif360.algorithms.preprocessing import DisparateImpactRemover
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.metrics import accuracy_score
 
 #import matplotlib.pyplot as plt
 
