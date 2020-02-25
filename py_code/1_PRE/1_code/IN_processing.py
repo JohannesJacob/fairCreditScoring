@@ -17,6 +17,7 @@ import sys
 sys.path.append("../")
 sys.path.append("C:\\Users\\Johannes\\OneDrive\\Dokumente\\Humboldt-Universität\\Msc WI\\1_4. Sem\\Master Thesis II\\fairCreditScoring\\py_code\\1_PRE\\1_code")
 import numpy as np
+import pandas as pd
 
 from load_germandata import load_GermanDataset
 from load_taiwandata import load_TaiwanDataset
@@ -25,6 +26,8 @@ from load_gmscdata import load_GMSCDataset
 from aif360.metrics import BinaryLabelDatasetMetric
 from aif360.algorithms.inprocessing.meta_fair_classifier import MetaFairClassifier
 from aif360.algorithms.inprocessing.celisMeta.utils import getStats
+from aif360.algorithms.inprocessing import PrejudiceRemover
+
 
 from sklearn.preprocessing import StandardScaler, MaxAbsScaler
 
@@ -34,7 +37,7 @@ dataset_orig = load_TaiwanDataset()
 
 # Scale all vars: di_remover = minmaxscaling, rest = standard_scaling
 protected = 'AGE'
-privileged_groups = [{'AGE': 1}]
+privileged_groups = [{'AGE': 1}] 
 unprivileged_groups = [{'AGE': 0}]
 print(dataset_orig.feature_names)
 
@@ -47,6 +50,9 @@ np.random.seed(1)
 
 # Get the dataset and split into train and test
 dataset_orig_train, dataset_orig_test = dataset_orig.split([0.8], shuffle=True) #should be stratified for target
+
+#testdata = dataset_orig_test.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True)
+#testdata[0].to_csv(output_path + 'taiwan_in_' + 'test' + '.csv', index = None, header=True)
 
 # Metric for the original dataset
 metric_orig_train = BinaryLabelDatasetMetric(dataset_orig_train, 
@@ -63,24 +69,49 @@ metric_scaled_train = BinaryLabelDatasetMetric(dataset_orig_train,
                              privileged_groups=privileged_groups)
 print("Train set: Difference in mean outcomes between unprivileged and privileged groups = %f" % metric_scaled_train.mean_difference())
 
-# Learn debiased classifier
-tau = 0.8
-debiased_model = MetaFairClassifier(tau=tau, sensitive_attr="AGE", type="fdr") # False discovery parity = Predictive parity = Sufficiency
-debiased_model.fit(dataset_orig_train)
+#### PREJUDICE REMOVER ########################################################
+pr_predictions = pd.DataFrame()
 
-# Apply the debiased model to test data
-dataset_debiasing_train = debiased_model.predict(dataset_orig_train)
-dataset_debiasing_test = debiased_model.predict(dataset_orig_test)
+all_eta = [1, 5, 15, 30, 50, 70, 100, 150]
 
-# Metrics for the dataset from model with debiasing
-metric_dataset_debiasing_train = BinaryLabelDatasetMetric(dataset_debiasing_train, 
-                                             unprivileged_groups=unprivileged_groups,
-                                             privileged_groups=privileged_groups)
+for eta in all_eta:
+    print("Eta: %.2f" % eta)
+    colname = "eta_" + str(eta)
 
-print("Train set: Difference in mean outcomes between unprivileged and privileged groups = %f" % metric_dataset_debiasing_train.mean_difference())
+    debiased_model = PrejudiceRemover(eta=eta, sensitive_attr=protected, class_attr = "TARGET")
+    debiased_model.fit(dataset_orig_train)
+    
+    dataset_debiasing_test = debiased_model.predict(dataset_orig_test)
+    scores = dataset_debiasing_test.scores
+    pr_predictions[colname] = sum(scores.tolist(), [])
+    
+pr_predictions.to_csv(output_path + 'taiwan_pr_predictions' + '.csv', index = None, header=True)
 
-metric_dataset_debiasing_test = BinaryLabelDatasetMetric(dataset_debiasing_test, 
-                                             unprivileged_groups=unprivileged_groups,
-                                             privileged_groups=privileged_groups)
+###############################################################################
 
-print("Test set: Difference in mean outcomes between unprivileged and privileged groups = %f" % metric_dataset_debiasing_test.mean_difference())
+
+#### META ALGORITHM ###########################################################
+meta_predictions = pd.DataFrame()
+
+all_tau = np.linspace(0.1, 0.9, 4)
+for tau in all_tau:
+    print("Tau: %.2f" % tau)
+    colname = "tau_" + str(tau)
+
+    debiased_model = MetaFairClassifier(tau=tau, sensitive_attr=protected)
+    debiased_model.fit(dataset_orig_train)
+    
+    dataset_debiasing_test = debiased_model.predict(dataset_orig_test)
+    scores = dataset_debiasing_test.scores
+    meta_predictions[colname] = sum(scores.tolist(), [])
+    
+meta_predictions.to_csv(output_path + 'taiwan_meta_predictions_tau_09' + '.csv', index = None, header=True)
+
+    
+###############################################################################
+    
+
+#### ADVERSIAL LEARNING #######################################################
+    
+    
+###############################################################################

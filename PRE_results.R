@@ -14,12 +14,15 @@ rm(packages)
 
 # - read data set (see Fairness Definitions Explained)
 
-dval <- read.csv("fairCreditScoring/py_code/1_PRE/2_output/pre_test.csv")
-dtrain <- read.csv("fairCreditScoring/py_code/1_PRE/2_output/pre_lfr.csv")
+dtest <- read.csv("3_wipResults/taiwan_scaled_test.csv")
+dtrain <- read.csv("3_wipResults/taiwan_pre_reweighing.csv")
+
+dtest_unscaled <- read.csv("3_wipResults/taiwan_orig_test.csv")
+dtest_unscaled <- subset(dtest_unscaled, select = c(CREDIT_AMNT,AGE, TARGET))
 
 # check fairness in training set
 source("fairCreditScoring/95_fairnessMetrics.R")
-statParDiff(data = dtrain, sens.attr = 'sex', target.attr = 'credit')
+statParDiff(data = dtrain, sens.attr = 'AGE', target.attr = 'TARGET')
 
 #set trainControl for caret
 source("fairCreditScoring/96_empSummary.R")
@@ -32,6 +35,8 @@ model.control <- trainControl(
   summaryFunction = creditSummary, #specific FAIR summary metric
   returnData = FALSE #FALSE, to reduce straining memomry 
 )
+
+# TO DO: Define tuning parameters
 
 # Create vector of model names to call parameter grid in for-loop
 model.names <- c(
@@ -47,7 +52,7 @@ for(i in model.names) {
   print(i)
   #grid <- get(paste("param.", i, sep = ""))
   
-  args.train <- list(credit~., 
+  args.train <- list(TARGET~., 
                      data = dtrain,  
                      method = i, 
                      #tuneGrid  = grid,
@@ -74,66 +79,65 @@ cat("Testing model...\n")
 
 #Print assessment results of level-0-models
 test_results <- NULL
-obs <- dval$credit
+obs <- dtest$TARGET
 for(i in model.names){
   # Define cutoff
   df_cutoff <- NULL
   
-  pred <- predict(get(paste("model.", i, sep = "")), newdata = dval, type = 'prob')$Good
+  pred <- predict(get(paste("model.", i, sep = "")), newdata = dtest, type = 'prob')$Good
   EMP <- empCreditScoring(scores = pred, classes = obs)
-  cutoff <- EMP$EMPCfrac
-  cutoff_label <- c(rep.int('Bad', ceiling(cutoff*nrow(dval))), rep.int('Good', floor(nrow(dval)-cutoff*nrow(dval))))
-  df_cutoff <- cbind(dval, prob = pred)
-  df_cutoff <- cbind(df_cutoff[order(df_cutoff$prob),], class = cutoff_label) 
+  cutoff <- quantile(pred, EMP$EMPCfrac)
+  cutoff_label <- sapply(pred, function(x) ifelse(x>cutoff, 'Good', 'Bad'))
+  df_cutoff <- cbind(dtest, CLASS = cutoff_label)
   
   # Compute AUC
   AUC <- as.numeric(roc(obs, as.numeric(pred))$auc)
   
   # Compute EMP
+  acceptedLoans <- EMP$EMPCfrac
   EMP <- EMP$EMPC
-  acceptedLoans <- cutoff
 
   # Compute Profit from Confusion Matrix (# means in comparison to base scenario = all get loan)
   loanprofit <- NULL
   for (i in 1:nrow(df_cutoff)){
-    class_label <- df_cutoff$class[i]
-    true_label <- df_cutoff$credit[i]
+    class_label <- df_cutoff$CLASS[i]
+    true_label <- df_cutoff$TARGET[i]
     if (class_label == "Bad" & true_label == "Bad"){
-      #p = df_cutoff$credit_amount[i]
+      #p = dtest_unscaled$CREDIT_AMNT[i]
       p = 0
     } else if (class_label == "Good" & true_label == "Bad"){
-      p = -df_cutoff$credit_amount[i] 
+      p = -dtest_unscaled$CREDIT_AMNT[i] 
     } else if (class_label == "Good" & true_label == "Good"){
-      p = df_cutoff$credit_amount[i] * 0.2644
+      p = dtest_unscaled$CREDIT_AMNT[i] * 0.2644
     }else if (class_label == "Bad" & true_label == "Good"){
-      #p = -df_cutoff$credit_amount[i] * 1.2644
+      #p = -dtest_unscaled$CREDIT_AMNT[i] * 1.2644
       p = 0
     }
     loanprofit <- c(loanprofit, p)
   }
   profit <- sum(loanprofit)
-  profitPerLoan <- profit/nrow(dval)
+  profitPerLoan <- profit/nrow(dtest)
   
   # fairness criteria average
-  statParityDiff <- statParDiff(data = df_cutoff, sens.attr = 'sex', target.attr = 'class')
+  statParityDiff <- statParDiff(data = df_cutoff, sens.attr = 'AGE', target.attr = 'CLASS')
   
   test_eval <- rbind(AUC, EMP, acceptedLoans, profit, profitPerLoan, statParityDiff)
   test_results <- cbind(test_results, test_eval)
 }
 
 # Add base scenario = all get loan
-AUC <- as.numeric(roc(obs, rep.int(1, nrow(dval)))$auc)
+AUC <- as.numeric(roc(obs, rep.int(1, nrow(dtest_unscaled)))$auc)
 EMP <- NA
 acceptedLoans <- 1
 loanprofit <- NULL
-for (i in 1:nrow(dval)){
-  p = ifelse(dval$credit[i]=="Bad", -dval$credit_amount[i], df_cutoff$credit_amount[i] * 0.2644)
+for (i in 1:nrow(dtest_unscaled)){
+  p = ifelse(dtest_unscaled$TARGET[i]=="Bad", -dtest_unscaled$CREDIT_AMNT[i], dtest_unscaled$CREDIT_AMNT[i] * 0.2644)
   loanprofit <- c(loanprofit, p)
 }
 profit <- sum(loanprofit)
-profitPerLoan <- profit/nrow(dval)
+profitPerLoan <- profit/nrow(dtest_unscaled)
 
-statParityDiff <- statParDiff(data = dval, sens.attr = 'sex', target.attr = 'credit')
+statParityDiff <- statParDiff(data = dtest_unscaled, sens.attr = 'AGE', target.attr = 'TARGET')
 
 test_eval <- rbind(AUC, EMP, acceptedLoans, profit, profitPerLoan, statParityDiff)
 test_results <- cbind(test_eval, test_results)

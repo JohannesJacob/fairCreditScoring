@@ -17,11 +17,12 @@ def load_TaiwanDataset():
     filepath = "C:\\Users\\Johannes\\OneDrive\\Dokumente\\Humboldt-Universität\\Msc WI\\1_4. Sem\\Master Thesis II\\2_raw data\\taiwan-data\\UCI_Credit_Card.csv"
     df = pd.read_csv(filepath, sep=',', na_values=[])
     
-    df = df.rename(columns={'default.payment.next.month': 'TARGET'})
+    df = df.rename(columns={'default.payment.next.month': 'TARGET', 
+                            'LIMIT_BAL': 'CREDIT_AMNT'})
     del df['ID']
-    df['AGE'] = df['AGE'].apply(lambda x: np.where(x >= 26, 1.0, 0.0))
+    df['AGE'] = df['AGE'].apply(lambda x: np.where(x >= 25, 1.0, 0.0))
 
-    XD_features = ["LIMIT_BAL","SEX","EDUCATION","MARRIAGE","AGE","PAY_0",
+    XD_features = ["CREDIT_AMNT","SEX","EDUCATION","MARRIAGE","AGE","PAY_0",
                 "PAY_2","PAY_3","PAY_4","PAY_5","PAY_6","BILL_AMT1",
                 "BILL_AMT2","BILL_AMT3","BILL_AMT4","BILL_AMT5","BILL_AMT6",
                 "PAY_AMT1","PAY_AMT2","PAY_AMT3","PAY_AMT4","PAY_AMT5",

@@ -24,27 +24,30 @@ from aif360.algorithms.preprocessing.reweighing import Reweighing
 from aif360.algorithms.preprocessing.lfr import LFR
 from aif360.algorithms.preprocessing import DisparateImpactRemover
 
+from sklearn.preprocessing import MaxAbsScaler
+
 #import matplotlib.pyplot as plt
 
 
-## import dataset
-dataset_orig = load_GMSCDataset() #load_TaiwanDataset() 
+## import datasets
+dataset_orig = load_TaiwanDataset() #load_GMSCDataset() 
 
-# Scale all vars: di_remover = minmaxscaling, rest = standard_scaling
 protected = 'AGE'
-privileged_groups = [{'AGE': 1}]
+privileged_groups = [{'AGE': 1}] 
 unprivileged_groups = [{'AGE': 0}]
 print(dataset_orig.feature_names)
 
-all_metrics =  ["Statistical parity difference",
-                   "Average odds difference",
-                   "Equal opportunity difference"]
 
 #random seed for calibrated equal odds prediction
 np.random.seed(1)
 
 # Get the dataset and split into train and test
 dataset_orig_train, dataset_orig_test = dataset_orig.split([0.8], shuffle=True) #should be stratified for target
+#tr, te = dataset_orig_train.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True), dataset_orig_test.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True)
+
+#tr[0].to_csv(output_path + 'taiwan_' + 'orig_train' + '.csv', index = None, header=True)
+#te[0].to_csv(output_path + 'taiwan_' + 'orig_test' + '.csv', index = None, header=True)
+
 
 # Metric for the original dataset
 metric_orig_train = BinaryLabelDatasetMetric(dataset_orig_train, 
@@ -52,6 +55,21 @@ metric_orig_train = BinaryLabelDatasetMetric(dataset_orig_train,
                                              privileged_groups=privileged_groups)
 print("Statistical parity difference between unprivileged and privileged groups = %f" % metric_orig_train.mean_difference())
 
+# Scale data and check that the Difference in mean outcomes didn't change
+min_max_scaler = MaxAbsScaler()
+dataset_orig_train.features = min_max_scaler.fit_transform(dataset_orig_train.features)
+dataset_orig_test.features = min_max_scaler.transform(dataset_orig_test.features)
+metric_scaled_train = BinaryLabelDatasetMetric(dataset_orig_train, 
+                             unprivileged_groups=unprivileged_groups,
+                             privileged_groups=privileged_groups)
+print("Train set: Difference in mean outcomes between unprivileged and privileged groups = %f" % metric_scaled_train.mean_difference())
+
+#tr, te = dataset_orig_train.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True), dataset_orig_test.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True)
+
+#tr[0].to_csv(output_path + 'taiwan_' + 'scaled_train' + '.csv', index = None, header=True)
+#te[0].to_csv(output_path + 'taiwan_' + 'scaled_test' + '.csv', index = None, header=True)
+
+# Preprocessing
 methods = ["lfr", 
            "reweighing", 
            "disp_impact_remover"
@@ -92,13 +110,11 @@ for m in methods:
     print(m + " achieved a statistical parity difference between unprivileged and privileged groups = %f" % metric_transf_train.mean_difference())
 
         
-    out.to_csv(output_path + 'GMSC_pre_' + m + '.csv', index = None, header=True)
+    out.to_csv(output_path + 'taiwan_pre_' + m + '.csv', index = None, header=True)
 
 
 
-e = dataset_orig_test.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True)
 
-e[0].to_csv(output_path + 'GMSC_pre_' + 'test' + '.csv', index = None, header=True)
 
 
 
