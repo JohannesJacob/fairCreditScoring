@@ -57,11 +57,11 @@ def load_TaiwanDataset():
             elif x == 4:
                 return 'others'
             elif x == 5:
-                return 'unknown1'
+                return 'others'
             elif x == 6:
-                return 'unknown2'
+                return 'others'
             else:
-                return 'NA'
+                return 'others'
 
         def label_marriage(x):
             if x == 1:
@@ -71,25 +71,23 @@ def load_TaiwanDataset():
             elif x == 3:
                 return 'others'
             else:
-                return 'NA'
+                return 'others'
         
         #to be defined
         def label_pay(x):
-            if x == -1:
-                return '<=0'
-            elif x in ['A12']:
-                return '<200'
-            elif x in ['A13']:
-                return '200+'
-            elif x == 'A14':
-                return 'None'
+            if x in [-2,-1]:
+                return 0
             else:
-                return 'NA'
+                return x
     
         # group credit history, savings, and employment
         df['SEX'] = df['SEX'].apply(lambda x: label_sex(x))
         df['EDUCATION'] = df['EDUCATION'].apply(lambda x: label_education(x))
         df['MARRIAGE'] = df['MARRIAGE'].apply(lambda x: label_marriage(x))
+        
+        pay_col = ["PAY_0","PAY_2","PAY_3","PAY_4","PAY_5","PAY_6"]
+        for p in pay_col:
+            df[p] = df[p].apply(lambda x: label_pay(x))
         
         # Good credit == 1
         status_map = {0: 1.0, 1: 2.0}

@@ -69,16 +69,20 @@ rm(args.model, args.train, model.control)
 
 # Predict on test set: Output = classification & scores
 model_prediction <- NULL
+cnames <-NULL
 for(i in model.names){
   # Define cutoff
   df_cutoff <- NULL
   
   pred <- predict(get(paste("model.", i, sep = "")), newdata = dtest, type = 'prob')$Good
-  EMP <- empCreditScoring(scores = pred, classes = obs)
+  EMP <- empCreditScoring(scores = pred, classes = dtest$TARGET)
   cutoff <- quantile(pred, EMP$EMPCfrac)
   cutoff_label <- sapply(pred, function(x) ifelse(x>cutoff, 'Good', 'Bad'))
 
-  model_prediction <- rbind(model_prediction, c(i, pred, cutoff_label))
+  model_prediction <- cbind(pred, cutoff_label)
+  cnames <- c(cnames, c(paste0(i, "_scores"), paste0(i, "_class")))
 }
-colnames(model_prediction) <- c("model.name", "scores", "class")
+colnames(model_prediction) <- cnames
+
+write.csv(model_prediction, "3_wipResults/POST_Rprediction.csv", row.names = F)
 
