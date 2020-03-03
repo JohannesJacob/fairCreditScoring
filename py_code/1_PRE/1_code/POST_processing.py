@@ -20,11 +20,13 @@ from load_gmscdata import load_GMSCDataset
 from aif360.metrics import BinaryLabelDatasetMetric
 from aif360.algorithms.postprocessing.reject_option_classification\
         import RejectOptionClassification
+from aif360.algorithms.postprocessing.eq_odds_postprocessing\
+        import EqOddsPostprocessing
 
 from sklearn.preprocessing import StandardScaler, MaxAbsScaler
 from sklearn.linear_model import LogisticRegression
 
-## import prediction results from R
+## import prediction results from R BASED ON THE SAME PREDICTIONS FOR COMPARISON
 pred = pd.read_csv(output_path + 'POST_Rprediction.csv')
 
 ## import dataset
@@ -55,9 +57,10 @@ dataset_orig_train.features = min_max_scaler.fit_transform(dataset_orig_train.fe
 dataset_orig_test.features = min_max_scaler.transform(dataset_orig_test.features)
 dataset_orig_test_pred = dataset_orig_test.copy(deepcopy=True)
 
-# insert predictions from R
+# Postprocessing
 model_names = ['glm', "svmRadial", "rf", "xgbTree", "nnet"]
-thresholds = pd.DataFrame()
+ROC_thresholds = pd.DataFrame()
+EOP_thresholds = pd.DataFrame()
 
 for m in model_names:
     scores = np.array(pred[m+'_scores']).reshape(len(pred.index),1)
@@ -73,14 +76,26 @@ for m in model_names:
                                       num_class_thresh=100, num_ROC_margin=50,
                                       metric_name=metric_name,
                                       metric_ub=metric_ub, metric_lb=metric_lb)
-    dataset_transf_test_pred = ROC.fit_predict(dataset_orig_test, dataset_orig_test_pred)
+    ROC = ROC.fit(dataset_orig_test, dataset_orig_test_pred)
+    dataset_transf_test_pred = ROC.predict(dataset_orig_test_pred)
+        
+    ROC_thresholds[m+"_fairScores"] = dataset_transf_test_pred.scores.flatten()
+    label_names = np.where(dataset_transf_test_pred.labels==1,'Good','Bad')
+    ROC_thresholds[m+"_fairLabels"] = label_names
     
-    # Store results
-    thresholds[m+"_fairScores"] = dataset_transf_test_pred.scores
-    thresholds[m+"_fairLabels"] = dataset_transf_test_pred.labels
+    # Equality of Odds
+    EOP = EqOddsPostprocessing(unprivileged_groups=unprivileged_groups, 
+                                     privileged_groups=privileged_groups)
+    EOP = EOP.fit(dataset_orig_test, dataset_orig_test_pred)
+    dataset_transf_test_pred = EOP.predict(dataset_orig_test_pred)
     
+    EOP_thresholds[m+"_fairScores"] = dataset_transf_test_pred.scores.flatten()
+    label_names = np.where(dataset_transf_test_pred.labels==1,'Good','Bad')
+    EOP_thresholds[m+"_fairLabels"] = label_names  
 
-thresholds.to_csv(output_path + 'POST_thresholds.csv', index = None, header=True)
+ROC_thresholds.to_csv(output_path + 'ROC_POST_thresholds.csv', index = None, header=True)
+EOP_thresholds.to_csv(output_path + 'EOP_POST_thresholds.csv', index = None, header=True)
+
 
 
 

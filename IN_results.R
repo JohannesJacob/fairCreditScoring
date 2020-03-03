@@ -63,8 +63,8 @@ for(m in model.names){
     } else if (class_label == "Good" & true_label == "Good"){
       p = df_cutoff$CREDIT_AMNT[i] * 0.2644
     }else if (class_label == "Bad" & true_label == "Good"){
-      #p = -df_cutoff$CREDIT_AMNT[i] * 1.2644
-      p = 0
+      p = -df_cutoff$CREDIT_AMNT[i] * 0.2644
+      #p = 0
     }
     loanprofit <- c(loanprofit, p)
   }
