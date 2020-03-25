@@ -13,8 +13,8 @@ source("fairCreditScoring/95_fairnessMetrics.R")
 # read data
 dtest_unscaled <- read.csv("3_wipResults/taiwan_orig_test.csv")
 
-thresholds <- read.csv("3_wipResults/POST_thresholds.csv")
-model.names <- c('glm', "svmRadial", "rf", "xgbTree", "nnet")
+thresholds <- read.csv("3_wipResults/ROC_POST_thresholds.csv")
+model.names <- c('glm', "svmLinear", "rf", "xgbTree", "nnet")
 
 #Print test results
 test_results <- NULL
@@ -55,7 +55,7 @@ for(m in model.names){
   statParityDiff <- statParDiff(data = dtest_unscaled, sens.attr = 'AGE', target.attr = 'CLASS')
   averageOddsDiff <- avgOddsDiff(data = dtest_unscaled, sens.attr = 'AGE', target.attr = 'TARGET', predicted.attr = 'CLASS')
   
-  test_eval <- rbind(AUC, acceptedLoans, profit, profitPerLoan, statParityDiff)
+  test_eval <- rbind(AUC, acceptedLoans, profit, profitPerLoan, statParityDiff, averageOddsDiff)
   test_results <- cbind(test_results, test_eval)
 }
 
@@ -75,7 +75,7 @@ dtest_unscaled$BASE_PRED <- factor(rep("Good", nrow(dtest_unscaled)), levels = c
 averageOddsDiff <- avgOddsDiff(data = dtest_unscaled, sens.attr = 'AGE', target.attr = 'TARGET', predicted.attr = 'BASE_PRED')
 
 
-test_eval <- rbind(AUC, acceptedLoans, profit, profitPerLoan, statParityDiff)
+test_eval <- rbind(AUC, acceptedLoans, profit, profitPerLoan, statParityDiff, averageOddsDiff)
 test_results <- cbind(test_eval, test_results)
 
 rm(acceptedLoans, AUC, class_label, cutoff, cutoff_label, EMP, i, loanprofit, obs, p,  
@@ -83,3 +83,5 @@ rm(acceptedLoans, AUC, class_label, cutoff, cutoff_label, EMP, i, loanprofit, ob
 
 # Print results
 colnames(test_results) <- c("base", model.names); test_results
+
+write.csv(test_results, "5_finalResults/POST_ROC_results.csv", row.names = T)

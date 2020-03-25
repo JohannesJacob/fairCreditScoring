@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Feb 24 14:19:48 2020
+Created on Wed Mar 25 09:31:13 2020
 
 @author: Johannes
 """
+
 
 output_path = 'C:\\Users\\Johannes\\OneDrive\\Dokumente\\Humboldt-Universität\\Msc WI\\1_4. Sem\\Master Thesis II\\3_wipResults\\'
 # Load all necessary packages
@@ -100,10 +101,4 @@ for m in model_names:
 
 ROC_thresholds.to_csv(output_path + 'ROC_POST_thresholds.csv', index = None, header=True)
 EOP_thresholds.to_csv(output_path + 'EOP_POST_thresholds.csv', index = None, header=True)
-
-
-
-
-
-
 

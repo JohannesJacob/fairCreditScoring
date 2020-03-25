@@ -16,6 +16,8 @@ output_path = 'C:\\Users\\Johannes\\OneDrive\\Dokumente\\Humboldt-Universität\\
 import sys
 sys.path.append("../")
 sys.path.append("C:\\Users\\Johannes\\OneDrive\\Dokumente\\Humboldt-Universität\\Msc WI\\1_4. Sem\\Master Thesis II\\fairCreditScoring\\py_code\\1_PRE\\1_code")
+import numpy as np
+import pandas as pd
 
 from load_taiwandata import load_TaiwanDataset
 
@@ -52,30 +54,10 @@ np.random.seed(1)
 # Get the dataset and split into train and test
 dataset_orig_train, dataset_orig_test = dataset_orig.split([0.8], shuffle=True) #should be stratified for target
 
-# Metric for the original dataset
-metric_orig_train = BinaryLabelDatasetMetric(dataset_orig_train, 
-                                             unprivileged_groups=unprivileged_groups,
-                                             privileged_groups=privileged_groups)
-print("Train set: Difference in mean outcomes between unprivileged and privileged groups = %f" % metric_orig_train.mean_difference())
-metric_orig_test = BinaryLabelDatasetMetric(dataset_orig_test, 
-                                             unprivileged_groups=unprivileged_groups,
-                                             privileged_groups=privileged_groups)
-print("Test set: Difference in mean outcomes between unprivileged and privileged groups = %f" % metric_orig_test.mean_difference())
-
 # Scaled dataset - Verify that the scaling does not affect the group label statistics¶
 min_max_scaler = MaxAbsScaler()
 dataset_orig_train.features = min_max_scaler.fit_transform(dataset_orig_train.features)
 dataset_orig_test.features = min_max_scaler.transform(dataset_orig_test.features)
-metric_scaled_train = BinaryLabelDatasetMetric(dataset_orig_train, 
-                             unprivileged_groups=unprivileged_groups,
-                             privileged_groups=privileged_groups)
-print("Train set: Difference in mean outcomes between unprivileged and privileged groups = %f" % metric_scaled_train.mean_difference())
-metric_scaled_test = BinaryLabelDatasetMetric(dataset_orig_test, 
-                             unprivileged_groups=unprivileged_groups,
-                             privileged_groups=privileged_groups)
-print("Test set: Difference in mean outcomes between unprivileged and privileged groups = %f" % metric_scaled_test.mean_difference())
-
-# Load in-processing algorithm that equalizes the odds
 
 # Learn parameters with debiasing = with debias set to True
 sess = tf.Session()
@@ -90,30 +72,11 @@ debiased_model.fit(dataset_orig_train)
 dataset_debiasing_train = debiased_model.predict(dataset_orig_train)
 dataset_debiasing_test = debiased_model.predict(dataset_orig_test)
 
-# Metrics for the dataset from model with debiasing
-metric_dataset_debiasing_train = BinaryLabelDatasetMetric(dataset_debiasing_train, 
-                                             unprivileged_groups=unprivileged_groups,
-                                             privileged_groups=privileged_groups)
+scores = dataset_debiasing_test.scores
 
-print("Train set: Difference in mean outcomes between unprivileged and privileged groups = %f" % metric_dataset_debiasing_train.mean_difference())
+advdebias_predictions = pd.DataFrame()
 
-metric_dataset_debiasing_test = BinaryLabelDatasetMetric(dataset_debiasing_test, 
-                                             unprivileged_groups=unprivileged_groups,
-                                             privileged_groups=privileged_groups)
-
-print("Test set: Difference in mean outcomes between unprivileged and privileged groups = %f" % metric_dataset_debiasing_test.mean_difference())
-
-classified_metric_debiasing_test = ClassificationMetric(dataset_orig_test, 
-                                                 dataset_debiasing_test,
-                                                 unprivileged_groups=unprivileged_groups,
-                                                 privileged_groups=privileged_groups)
-print("Test set: Classification accuracy = %f" % classified_metric_debiasing_test.accuracy())
-TPR = classified_metric_debiasing_test.true_positive_rate()
-TNR = classified_metric_debiasing_test.true_negative_rate()
-bal_acc_debiasing_test = 0.5*(TPR+TNR)
-print("Test set: Balanced classification accuracy = %f" % bal_acc_debiasing_test)
-print("Test set: Disparate impact = %f" % classified_metric_debiasing_test.disparate_impact())
-print("Test set: Equal opportunity difference = %f" % classified_metric_debiasing_test.equal_opportunity_difference())
-print("Test set: Average odds difference = %f" % classified_metric_debiasing_test.average_odds_difference())
-print("Test set: Theil_index = %f" % classified_metric_debiasing_test.theil_index())
+advdebias_predictions["scores"] = sum(scores.tolist(), [])
+    
+advdebias_predictions.to_csv(output_path + 'taiwan_advdebias_predictions' + '.csv', index = None, header=True)
 

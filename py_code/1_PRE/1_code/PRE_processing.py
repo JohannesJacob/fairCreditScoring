@@ -70,9 +70,10 @@ print("Train set: Difference in mean outcomes between unprivileged and privilege
 #te[0].to_csv(output_path + 'taiwan_' + 'scaled_test' + '.csv', index = None, header=True)
 
 # Preprocessing
-methods = ["lfr", 
-           "reweighing", 
-           "disp_impact_remover"
+methods = ["lfr"
+           #, 
+           #"reweighing", 
+           #"disp_impact_remover"
            ]
 
 for m in methods:
@@ -91,8 +92,8 @@ for m in methods:
 
     elif m == "lfr":
         TR = LFR(unprivileged_groups = unprivileged_groups, privileged_groups = privileged_groups)
-        #TR = TR.fit(dataset_orig_train)
-        dataset_transf_train = TR.fit_transform(dataset_orig_train)
+        TR = TR.fit(dataset_orig_train)
+        dataset_transf_train = TR.transform(dataset_orig_train, threshold = 0.8)
         out = dataset_transf_train.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True)[0]
        
     elif m == "disp_impact_remover":     
@@ -110,7 +111,7 @@ for m in methods:
     print(m + " achieved a statistical parity difference between unprivileged and privileged groups = %f" % metric_transf_train.mean_difference())
 
         
-    out.to_csv(output_path + 'taiwan_pre_' + m + '.csv', index = None, header=True)
+    out.to_csv(output_path + 'taiwan_pre_' + m + '2.csv', index = None, header=True)
 
 
 

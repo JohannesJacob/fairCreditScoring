@@ -22,7 +22,6 @@ dtest_unscaled <- subset(dtest_unscaled, select = c(CREDIT_AMNT,AGE, TARGET))
 
 # check fairness in training set
 source("fairCreditScoring/95_fairnessMetrics.R")
-statParDiff(data = dtrain, sens.attr = 'AGE', target.attr = 'TARGET')
 
 #set trainControl for caret
 source("fairCreditScoring/96_empSummary.R")
@@ -68,11 +67,12 @@ args.glm <- list(family = "binomial")
 
 # Create vector of model names to call parameter grid in for-loop
 model.names <- c(
-  "glm",
-  "svmRadial", 
-  "rf", 
-  "xgbTree"
-  , "nnet"
+  "glm"
+  #,
+  #"svmRadial"#, 
+  #"rf", 
+  #"xgbTree"
+  #, "nnet"
 )
 
 # Train models and save result to model."name"
@@ -179,4 +179,5 @@ rm(acceptedLoans, AUC, class_label, cutoff, cutoff_label, EMP, i, loanprofit, ob
 # Print results
 colnames(test_results) <- c("base", model.names); test_results
 
+write.csv(test_results, "5_finalResults/XX.csv", row.names = F)
 
