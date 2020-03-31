@@ -42,38 +42,34 @@ print(dataset_orig.feature_names)
 np.random.seed(1)
 
 # Get the dataset and split into train and test
-dataset_orig_train, dataset_orig_test = dataset_orig.split([0.8], shuffle=True) #should be stratified for target
-#tr, te = dataset_orig_train.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True), dataset_orig_test.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True)
+dataset_orig_train, dataset_orig_vt = dataset_orig.split([0.7], shuffle=True)
+dataset_orig_valid, dataset_orig_test = dataset_orig_vt.split([0.5], shuffle=True)
+tr, val, te = dataset_orig_train.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True), \
+              dataset_orig_valid.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True), \
+              dataset_orig_test.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True)
 
-#tr[0].to_csv(output_path + 'taiwan_' + 'orig_train' + '.csv', index = None, header=True)
-#te[0].to_csv(output_path + 'taiwan_' + 'orig_test' + '.csv', index = None, header=True)
-
-
-# Metric for the original dataset
-metric_orig_train = BinaryLabelDatasetMetric(dataset_orig_train, 
-                                             unprivileged_groups=unprivileged_groups,
-                                             privileged_groups=privileged_groups)
-print("Statistical parity difference between unprivileged and privileged groups = %f" % metric_orig_train.mean_difference())
+tr[0].to_csv(output_path + 'taiwan_' + 'orig_train' + '.csv', index = None, header=True)
+te[0].to_csv(output_path + 'taiwan_' + 'orig_test' + '.csv', index = None, header=True)
+val[0].to_csv(output_path + 'taiwan_' + 'orig_valid' + '.csv', index = None, header=True)
 
 # Scale data and check that the Difference in mean outcomes didn't change
 min_max_scaler = MaxAbsScaler()
 dataset_orig_train.features = min_max_scaler.fit_transform(dataset_orig_train.features)
 dataset_orig_test.features = min_max_scaler.transform(dataset_orig_test.features)
-metric_scaled_train = BinaryLabelDatasetMetric(dataset_orig_train, 
-                             unprivileged_groups=unprivileged_groups,
-                             privileged_groups=privileged_groups)
-print("Train set: Difference in mean outcomes between unprivileged and privileged groups = %f" % metric_scaled_train.mean_difference())
+dataset_orig_valid.features = min_max_scaler.transform(dataset_orig_test.features)
 
-#tr, te = dataset_orig_train.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True), dataset_orig_test.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True)
+tr, val, te = dataset_orig_train.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True), \
+              dataset_orig_valid.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True), \
+              dataset_orig_test.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True)
 
-#tr[0].to_csv(output_path + 'taiwan_' + 'scaled_train' + '.csv', index = None, header=True)
-#te[0].to_csv(output_path + 'taiwan_' + 'scaled_test' + '.csv', index = None, header=True)
-
+tr[0].to_csv(output_path + 'taiwan_' + 'scaled_train' + '.csv', index = None, header=True)
+te[0].to_csv(output_path + 'taiwan_' + 'scaled_test' + '.csv', index = None, header=True)
+val[0].to_csv(output_path + 'taiwan_' + 'scaled_valid' + '.csv', index = None, header=True)
+              
 # Preprocessing
-methods = ["lfr"
-           #, 
-           #"reweighing", 
-           #"disp_impact_remover"
+methods = ["lfr", 
+           "reweighing", 
+           "disp_impact_remover"
            ]
 
 for m in methods:
@@ -111,7 +107,7 @@ for m in methods:
     print(m + " achieved a statistical parity difference between unprivileged and privileged groups = %f" % metric_transf_train.mean_difference())
 
         
-    out.to_csv(output_path + 'taiwan_pre_' + m + '2.csv', index = None, header=True)
+    out.to_csv(output_path + 'taiwan_pre_' + m + '.csv', index = None, header=True)
 
 
 

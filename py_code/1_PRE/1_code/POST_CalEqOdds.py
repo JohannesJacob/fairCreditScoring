@@ -5,7 +5,6 @@ Created on Wed Mar 25 09:31:13 2020
 @author: Johannes
 """
 
-
 output_path = 'C:\\Users\\Johannes\\OneDrive\\Dokumente\\Humboldt-Universität\\Msc WI\\1_4. Sem\\Master Thesis II\\3_wipResults\\'
 # Load all necessary packages
 import sys
@@ -19,10 +18,8 @@ from load_taiwandata import load_TaiwanDataset
 from load_gmscdata import load_GMSCDataset
 
 from aif360.metrics import BinaryLabelDatasetMetric
-from aif360.algorithms.postprocessing.reject_option_classification\
-        import RejectOptionClassification
-from aif360.algorithms.postprocessing.eq_odds_postprocessing\
-        import EqOddsPostprocessing
+from aif360.algorithms.postprocessing.calibrated_eq_odds_postprocessing \
+    import CalibratedEqOddsPostprocessing
 
 from sklearn.preprocessing import StandardScaler, MaxAbsScaler
 from sklearn.linear_model import LogisticRegression
@@ -39,13 +36,6 @@ privileged_groups = [{'AGE': 1}]
 unprivileged_groups = [{'AGE': 0}]
 print(dataset_orig.feature_names)
 
-# Metric used (should be one of allowed_metrics)
-metric_name = "Statistical parity difference"
-
-# Upper and lower bound on the fairness metric used
-metric_ub = 0.05
-metric_lb = -0.05
-
 #random seed for calibrated equal odds prediction
 np.random.seed(1)
 
@@ -60,45 +50,29 @@ dataset_orig_test_pred = dataset_orig_test.copy(deepcopy=True)
 
 # Postprocessing
 model_names = ['glm', "svmLinear", "rf", "xgbTree", "nnet"]
-ROC_thresholds = pd.DataFrame()
-EOP_thresholds = pd.DataFrame()
+CEO_thresholds = pd.DataFrame()
 
 for m in model_names:
     scores = np.array(pred[m+'_scores']).reshape(len(pred.index),1)
-    labels = np.where(pred[m+'_class']=='Good', 2.0, 1.0).reshape(len(pred.index),1)
+    labels = np.where(pred[m+'_class']=='Good', 1.0, 2.0).reshape(len(pred.index),1)
     
     dataset_orig_test_pred.scores = scores
     dataset_orig_test_pred.labels = labels
     
     # Reject Option Classification
-    ROC = RejectOptionClassification(unprivileged_groups=unprivileged_groups, 
-                                     privileged_groups=privileged_groups, 
-                                     low_class_thresh=0.01, high_class_thresh=0.99,
-                                      num_class_thresh=100, num_ROC_margin=50,
-                                      metric_name=metric_name,
-                                      metric_ub=metric_ub, metric_lb=metric_lb)
-    ROC = ROC.fit(dataset_orig_test, dataset_orig_test_pred)
-    dataset_transf_test_pred = ROC.predict(dataset_orig_test_pred)
+    CEO = CalibratedEqOddsPostprocessing(unprivileged_groups=unprivileged_groups, 
+                                         privileged_groups=privileged_groups, 
+                                         cost_constraint = "weighted"
+                                         )
+    CEO = CEO.fit(dataset_orig_test, dataset_orig_test_pred)
     
-    # print best threshold
-    
-    ROC_thresholds[m+"_fairScores"] = dataset_transf_test_pred.scores.flatten()
-    label_names = np.where(dataset_transf_test_pred.labels==1,'Good','Bad')
-    ROC_thresholds[m+"_fairLabels"] = label_names
-    
-    # Equality of Odds CHANGE TO CALIBRATED EQUALITY OF ODDS BUT OPTIMIZE FOR DIFFERENT THRESHOLDSS
-    EOP = EqOddsPostprocessing(unprivileged_groups=unprivileged_groups, 
-                                     privileged_groups=privileged_groups)
-    #EOP = EOP.fit(dataset_orig_test, dataset_orig_test_pred)
-    #dataset_transf_test_pred = EOP.predict(dataset_orig_test_pred)
-    dataset_transf_test_pred = EOP.fit_predict(dataset_orig_test, dataset_orig_test_pred)
-    
-    # print best threshold
-    
-    EOP_thresholds[m+"_fairScores"] = dataset_transf_test_pred.scores.flatten()
-    label_names = np.where(dataset_transf_test_pred.labels==1,'Good','Bad')
-    EOP_thresholds[m+"_fairLabels"] = label_names  
+    thresholds = np.linspace(0.1, 0.9, 9)
+    for t in thresholds:
+        dataset_transf_test_pred = CEO.predict(dataset_orig_test_pred, t)
+        # print best threshold
+        CEO_thresholds[m+"_fairScores_at_"+str(t)] = dataset_transf_test_pred.scores.flatten()
+        label_names = np.where(dataset_transf_test_pred.labels==1,'Good','Bad')
+        CEO_thresholds[m+"_fairLabels_at_"+str(t)] = label_names
 
-ROC_thresholds.to_csv(output_path + 'ROC_POST_thresholds.csv', index = None, header=True)
-EOP_thresholds.to_csv(output_path + 'EOP_POST_thresholds.csv', index = None, header=True)
+CEO_thresholds.to_csv(output_path + 'CEO_POST_thresholds.csv', index = None, header=True)
 

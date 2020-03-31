@@ -49,28 +49,19 @@ all_metrics =  ["Statistical parity difference",
 np.random.seed(1)
 
 # Get the dataset and split into train and test
-dataset_orig_train, dataset_orig_test = dataset_orig.split([0.8], shuffle=True) #should be stratified for target
-
-#testdata = dataset_orig_test.convert_to_dataframe(de_dummy_code=True, sep='=', set_category=True)
-#testdata[0].to_csv(output_path + 'taiwan_in_' + 'test' + '.csv', index = None, header=True)
-
-# Metric for the original dataset
-metric_orig_train = BinaryLabelDatasetMetric(dataset_orig_train, 
-                                             unprivileged_groups=unprivileged_groups,
-                                             privileged_groups=privileged_groups)
-print("Statistical parity difference between unprivileged and privileged groups = %f" % metric_orig_train.mean_difference())
+dataset_orig_train, dataset_orig_vt = dataset_orig.split([0.7], shuffle=True)
+dataset_orig_valid, dataset_orig_test = dataset_orig_vt.split([0.5], shuffle=True)
 
 # Scale data and check that the Difference in mean outcomes didn't change
 min_max_scaler = MaxAbsScaler()
 dataset_orig_train.features = min_max_scaler.fit_transform(dataset_orig_train.features)
 dataset_orig_test.features = min_max_scaler.transform(dataset_orig_test.features)
-metric_scaled_train = BinaryLabelDatasetMetric(dataset_orig_train, 
-                             unprivileged_groups=unprivileged_groups,
-                             privileged_groups=privileged_groups)
-print("Train set: Difference in mean outcomes between unprivileged and privileged groups = %f" % metric_scaled_train.mean_difference())
+dataset_orig_valid.features = min_max_scaler.transform(dataset_orig_test.features)
 
 #### PREJUDICE REMOVER ########################################################
-pr_predictions = pd.DataFrame()
+pr_predictions_valid = pd.DataFrame()
+pr_predictions_test = pd.DataFrame()
+
 
 all_eta = [1, 5, 15, 30, 50, 70, 100, 150]
 
@@ -81,11 +72,17 @@ for eta in all_eta:
     debiased_model = PrejudiceRemover(eta=eta, sensitive_attr=protected, class_attr = "TARGET")
     debiased_model.fit(dataset_orig_train)
     
+    dataset_debiasing_valid = debiased_model.predict(dataset_orig_valid)
     dataset_debiasing_test = debiased_model.predict(dataset_orig_test)
-    scores = dataset_debiasing_test.scores
-    pr_predictions[colname] = sum(scores.tolist(), [])
+
+    scores = dataset_debiasing_valid.scores
+    pr_predictions_valid[colname] = sum(scores.tolist(), [])
     
-pr_predictions.to_csv(output_path + 'taiwan_pr_predictions' + '.csv', index = None, header=True)
+    scores = dataset_debiasing_test.scores
+    pr_predictions_test[colname] = sum(scores.tolist(), [])
+    
+pr_predictions_valid.to_csv(output_path + 'taiwan_in_PRpredictions_valid' + '.csv', index = None, header=True)
+pr_predictions_test.to_csv(output_path + 'taiwan_in_PRpredictions_test' + '.csv', index = None, header=True)
 
 ###############################################################################
 

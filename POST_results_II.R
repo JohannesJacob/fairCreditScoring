@@ -16,6 +16,8 @@ dtest_unscaled <- read.csv("3_wipResults/taiwan_orig_test.csv")
 thresholds <- read.csv("3_wipResults/ROC_POST_thresholds.csv")
 model.names <- c('glm', "svmLinear", "rf", "xgbTree", "nnet")
 
+## FOR EOP FIND A THRESHOLD FOR EVERY MODEL BASED ON EMP
+
 #Print test results
 test_results <- NULL
 obs <- dtest_unscaled$TARGET

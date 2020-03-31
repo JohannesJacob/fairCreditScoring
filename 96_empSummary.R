@@ -14,7 +14,7 @@ creditSummary <- function (data,
     stop("levels of observed and predicted data do not match")
 
   #Calculate Expected Maximum Profit (EMP) with default values ROI = 0.26, p0 = 0.55, p1 = 0.9
-  out <- empCreditScoring(scores = data$Good, classes = data$obs)
+  out <- EMP::empCreditScoring(scores = data$Good, classes = data$obs)
   out <- out$EMPC        
   names(out) <- "EMP"#Metric name
   out

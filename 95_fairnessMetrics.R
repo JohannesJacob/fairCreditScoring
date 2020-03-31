@@ -1,12 +1,16 @@
 # Statistical metrics
 
-statParDiff <- function(data = df, sens.attr = "AGE", target.attr = "TARGET"){
-  sens.var <- as.factor(data[, sens.attr])
-  target.var <- as.factor(data[, target.attr])
+statParDiff <- function(sens.attr = df$AGE, target.attr = df$TARGET){
+  sens.var <- as.factor(sens.attr)
+  target.var <- as.factor(target.attr)
   sens.lvls <- levels(sens.var)
   target.lvls <- levels(target.var)
+  
+  data <- cbind(sens.var, target.var)
+  
   total.count <- nrow(data)
   target1.count <- nrow(data[target.var==target.lvls[1],])
+  
   
   p_1 <- (nrow(data[sens.var == sens.lvls[1] & target.var==target.lvls[1],])/target1.count) * 
     (target1.count/total.count) / (nrow(data[sens.var == sens.lvls[1],])/total.count)
@@ -15,8 +19,9 @@ statParDiff <- function(data = df, sens.attr = "AGE", target.attr = "TARGET"){
   return (p_1-p_2)
 }
 
-avgOddsDiff <- function(data = df, sens.attr = "AGE", target.attr = "TARGET", predicted.attr = "class"){
-  data[, sens.attr] <- as.factor(data[, sens.attr])
+avgOddsDiff <- function(sens.attr = df$AGE, target.attr = df$TARGET, predicted.attr = df$class){
+  sens.attr <- as.factor(sens.attr)
+  data = cbind(sens.attr, target.attr, predicted.attr)
   
   data_un <- data[data[, sens.attr]==levels(data[, sens.attr])[1],]
   FN_un <- nrow(data_un[data_un[,target.attr] == "Bad" & data_un[,predicted.attr]=="Good",])
