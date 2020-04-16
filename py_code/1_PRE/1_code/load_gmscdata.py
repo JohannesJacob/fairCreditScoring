@@ -28,13 +28,15 @@ def load_GMSCDataset():
     df['age'] = df['age'].apply(lambda x: np.where(x >= 26, 1.0, 0.0))
     df = df.rename(columns={'SeriousDlqin2yrs': 'TARGET', 'age': 'AGE'})
     df = df[df.MonthlyIncome.notnull()]
+    df['CREDIT_AMNT'] = df['DebtRatio'] * df['MonthlyIncome']
+
 
 
     XD_features = ['RevolvingUtilizationOfUnsecuredLines', 'AGE',
        'NumberOfTime30-59DaysPastDueNotWorse', 'DebtRatio', 'MonthlyIncome',
        'NumberOfOpenCreditLinesAndLoans', 'NumberOfTimes90DaysLate',
        'NumberRealEstateLoansOrLines', 'NumberOfTime60-89DaysPastDueNotWorse',
-       'NumberOfDependents']
+       'NumberOfDependents', 'CREDIT_AMNT']
     D_features = ['AGE']
     Y_features = ['TARGET']
     X_features = list(set(XD_features)-set(D_features))

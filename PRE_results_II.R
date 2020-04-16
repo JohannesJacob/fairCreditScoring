@@ -20,8 +20,8 @@ rm(packages, nrOfCores)
 
 # - read data set (see Fairness Definitions Explained)
 
-dtest <- read.csv("3_wipResults/taiwan_scaled_test.csv")
-dval <- read.csv("3_wipResults/taiwan_scaled_valid.csv")
+dtest <- read.csv("3_wipResults/taiwan_pre_test_disp_impact_remover.csv")
+dval <- read.csv("3_wipResults/taiwan_pre_valid_disp_impact_remover.csv")
 dtrain <- read.csv("3_wipResults/taiwan_pre_disp_impact_remover.csv") #REWEIGHING
 
 dtest_unscaled <- read.csv("3_wipResults/taiwan_orig_test.csv")
@@ -164,8 +164,10 @@ for(i in model.names){
   
   # fairness criteria average
   statParityDiff <- statParDiff(sens.attr = dtest$AGE, target.attr = cutoff_label)
+  averageOddsDiff <- avgOddsDiff(sens.attr = dtest$AGE, target.attr = dtest$TARGET, predicted.attr = cutoff_label)
+  predParityDiff <- predParDiff(sens.attr = dtest$AGE, target.attr = dtest$TARGET, predicted.attr = cutoff_label)
   
-  test_eval <- rbind(AUC, EMP, acceptedLoans, profit, profitPerLoan, statParityDiff)
+  test_eval <- rbind(AUC, EMP, acceptedLoans, profit, profitPerLoan, statParityDiff, averageOddsDiff, predParityDiff)
   test_results <- cbind(test_results, test_eval)
 }
 

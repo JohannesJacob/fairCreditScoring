@@ -1,4 +1,4 @@
-# POSTPROCESSING PROFIT EVALUATION
+# MAX PROFIT
 
 setwd("C:/Users/Johannes/OneDrive/Dokumente/Humboldt-Universität/Msc WI/1_4. Sem/Master Thesis II/")
 rm(list = ls());gc()
@@ -12,18 +12,19 @@ source("fairCreditScoring/95_fairnessMetrics.R")
 
 # read data
 dtest_unscaled <- read.csv("3_wipResults/taiwan_orig_test.csv")
+dtest_unscaled <- subset(dtest_unscaled, select = c(CREDIT_AMNT,AGE, TARGET))
 
-POST_results <- read.csv("3_wipResults/taiwan_post_roc_results_test.csv")
+POST_results <- read.csv("3_wipResults/taiwan_post_training_results_dtest.csv")
 
 #---- TESTING ----
 model.names <- c('glm', "svmLinear", "rf", "xgbTree", "nnet")
 test_results <- NULL
 for(m in model.names){
   # Assess test restults
-  cutoff_label <- POST_results[,paste0(m, "_fairLabels")]
+  cutoff_label <- POST_results[,paste0(m, "_class")]
   #cutoff_label <- factor(as.character(cutoff_label), levels = c("Good", "Bad"))
-  scores <- sapply(cutoff_label, function(x) ifelse(x=="Good", 1, 0))
-
+  scores <- POST_results[,paste0(m, "_scores")]
+  
   # Compute AUC
   AUC <- as.numeric(roc(dtest_unscaled$TARGET, as.numeric(scores))$auc)
   
@@ -67,4 +68,4 @@ for(m in model.names){
 # Print results
 colnames(test_results) <- c(model.names); test_results
 
-write.csv(test_results, "5_finalResults/POST_ROC_Results.csv", row.names = T)
+write.csv(test_results, "5_finalResults/MAX_PROFIT_Results.csv", row.names = T)

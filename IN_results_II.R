@@ -12,6 +12,7 @@ source("fairCreditScoring/95_fairnessMetrics.R")
 
 # read data
 dval <- read.csv("3_wipResults/taiwan_scaled_valid.csv")
+dtest <- read.csv("3_wipResults/taiwan_scaled_test.csv")
 dtest_unscaled <- read.csv("3_wipResults/taiwan_orig_test.csv")
 
 #-------------------------- PREJUDICE REMOVER ----------------------------------
@@ -23,12 +24,12 @@ dtest_pred <- read.csv("3_wipResults/taiwan_in_PRpredictions_test.csv")
 
 # Find optimal cutoff based on validation set
 empVals <- NULL
-for (col in 1:ncol(model)){
-  empVal <- empCreditScoring(model[,col], dval$TARGET)
+for (col in 1:ncol(dval_pred)){
+  empVal <- empCreditScoring(dval_pred[,col], dval$TARGET)
   empVals <- unlist(c(empVals, empVal["EMPC"]))
 }
-bestPrediction <- model[, which(empVals == max(empVals))]
-best_eta <- colnames(model)[which(empVals == max(empVals))]
+bestPrediction <- dval_pred[, which(empVals == max(empVals))]
+best_eta <- colnames(dval_pred)[which(empVals == max(empVals))]
 
 # Define cutoff
 EMP <- empCreditScoring(scores = bestPrediction, classes = dval$TARGET)
@@ -70,9 +71,13 @@ profitPerLoan <- profit/nrow(dtest)
 
 # fairness criteria average
 statParityDiff <- statParDiff(sens.attr = dtest$AGE, target.attr = cutoff_label)
+averageOddsDiff <- avgOddsDiff(sens.attr = dtest$AGE, target.attr = dtest$TARGET, predicted.attr = cutoff_label)
+predParityDiff <- predParDiff(sens.attr = dtest$AGE, target.attr = dtest$TARGET, predicted.attr = cutoff_label)
 
-test_eval <- rbind(AUC, EMP, acceptedLoans, profit, profitPerLoan, statParityDiff)
+cm <- confusionMatrix(data = as.factor(cutoff_label), reference = dtest$TARGET)
+balAccuracy <- cm$byClass[['Balanced Accuracy']]
 
+test_eval <- rbind(AUC, balAccuracy, EMP, acceptedLoans, profit, profitPerLoan, statParityDiff, averageOddsDiff, predParityDiff)
 
 # Print results
 test_eval
@@ -122,9 +127,13 @@ profitPerLoan <- profit/nrow(dtest)
 
 # fairness criteria average
 statParityDiff <- statParDiff(sens.attr = dtest$AGE, target.attr = cutoff_label)
+averageOddsDiff <- avgOddsDiff(sens.attr = dtest$AGE, target.attr = dtest$TARGET, predicted.attr = cutoff_label)
+predParityDiff <- predParDiff(sens.attr = dtest$AGE, target.attr = dtest$TARGET, predicted.attr = cutoff_label)
 
-test_eval <- rbind(AUC, EMP, acceptedLoans, profit, profitPerLoan, statParityDiff)
+cm <- confusionMatrix(data = as.factor(cutoff_label), reference = dtest$TARGET)
+balAccuracy <- cm$byClass[['Balanced Accuracy']]
 
+test_eval <- rbind(AUC, balAccuracy, EMP, acceptedLoans, profit, profitPerLoan, statParityDiff, averageOddsDiff, predParityDiff)
 
 # Print results
 test_eval

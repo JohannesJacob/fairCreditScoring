@@ -56,7 +56,7 @@ dataset_orig_valid, dataset_orig_test = dataset_orig_vt.split([0.5], shuffle=Tru
 min_max_scaler = MaxAbsScaler()
 dataset_orig_train.features = min_max_scaler.fit_transform(dataset_orig_train.features)
 dataset_orig_test.features = min_max_scaler.transform(dataset_orig_test.features)
-dataset_orig_valid.features = min_max_scaler.transform(dataset_orig_test.features)
+dataset_orig_valid.features = min_max_scaler.transform(dataset_orig_valid.features)
 
 #### PREJUDICE REMOVER ########################################################
 pr_predictions_valid = pd.DataFrame()

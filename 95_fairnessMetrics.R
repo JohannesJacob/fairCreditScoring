@@ -21,24 +21,60 @@ statParDiff <- function(sens.attr = df$AGE, target.attr = df$TARGET){
 
 avgOddsDiff <- function(sens.attr = df$AGE, target.attr = df$TARGET, predicted.attr = df$class){
   sens.attr <- as.factor(sens.attr)
-  data = cbind(sens.attr, target.attr, predicted.attr)
-  
-  data_un <- data[data[, sens.attr]==levels(data[, sens.attr])[1],]
-  FN_un <- nrow(data_un[data_un[,target.attr] == "Bad" & data_un[,predicted.attr]=="Good",])
-  FP_un <- nrow(data_un[data_un[,target.attr] == "Good" & data_un[,predicted.attr]=="Bad",])
-  TP_un <- nrow(data_un[data_un[,target.attr] == "Bad" & data_un[,predicted.attr]=="Bad",])
-  TN_un <- nrow(data_un[data_un[,target.attr] == "Good" & data_un[,predicted.attr]=="Good",])
+  data = data.frame(sens.attr, target.attr, predicted.attr, stringsAsFactors = T)
+  colnames(data) <- c("sens", "target", "pred")
+
+  data_un <- data[data[, "sens"]==levels(data[, "sens"])[1],]
+  FN_un <- nrow(data_un[data_un[,"target"] == "Bad" & data_un[,"pred"]=="Good",])
+  FP_un <- nrow(data_un[data_un[,"target"] == "Good" & data_un[,"pred"]=="Bad",])
+  TP_un <- nrow(data_un[data_un[,"target"] == "Bad" & data_un[,"pred"]=="Bad",])
+  TN_un <- nrow(data_un[data_un[,"target"] == "Good" & data_un[,"pred"]=="Good",])
   FPR_un <- FP_un/(TN_un+FP_un)
   TPR_un <- TP_un/(TP_un+FN_un)
   
-  data_priv <- data[data[, sens.attr]==levels(data[, sens.attr])[2],]
-  FN_priv <- nrow(data_priv[data_priv[,target.attr] == "Bad" & data_priv[,predicted.attr]=="Good",])
-  FP_priv <- nrow(data_priv[data_priv[,target.attr] == "Good" & data_priv[,predicted.attr]=="Bad",])
-  TP_priv <- nrow(data_priv[data_priv[,target.attr] == "Bad" & data_priv[,predicted.attr]=="Bad",])
-  TN_priv <- nrow(data_priv[data_priv[,target.attr] == "Good" & data_priv[,predicted.attr]=="Good",])
+  data_priv <- data[data[, "sens"]==levels(data[, "sens"])[2],]
+  FN_priv <- nrow(data_priv[data_priv[,"target"] == "Bad" & data_priv[,"pred"]=="Good",])
+  FP_priv <- nrow(data_priv[data_priv[,"target"] == "Good" & data_priv[,"pred"]=="Bad",])
+  TP_priv <- nrow(data_priv[data_priv[,"target"] == "Bad" & data_priv[,"pred"]=="Bad",])
+  TN_priv <- nrow(data_priv[data_priv[,"target"] == "Good" & data_priv[,"pred"]=="Good",])
   FPR_priv <- FP_priv/(TN_priv+FP_priv)
   TPR_priv <- TP_priv/(TP_priv+FN_priv)
   
   
   return (((FPR_un-FPR_priv)+(TPR_un-TPR_priv))/2)
+}
+
+
+predParDiff <- function(sens.attr = df$AGE, target.attr = df$TARGET, predicted.attr = df$class){
+  sens.attr <- as.factor(sens.attr)
+  data = data.frame(sens.attr, target.attr, predicted.attr, stringsAsFactors = T)
+  colnames(data) <- c("sens", "target", "pred")
+  
+  data_un <- data[data[, "sens"]==levels(data[, "sens"])[1],]
+  pp_un <- nrow(data_un[data_un[,"target"] == "Good" & data_un[,"pred"]=="Good",])/nrow(data_un[data_un[,"pred"] == "Good",])
+  
+  data_priv <- data[data[, "sens"]==levels(data[, "sens"])[2],]
+  pp_priv <- nrow(data_priv[data_priv[,"target"] == "Good" & data_priv[,"pred"]=="Good",])/nrow(data_priv[data_priv[,"pred"] == "Good",])
+  
+  return (pp_un-pp_priv)
+}
+
+predParDiff2 <- function(sens.attr = df$AGE, target.attr = df$TARGET, predicted.attr = df$class){
+  sens.attr <- as.factor(sens.attr)
+  data = data.frame(sens.attr, target.attr, predicted.attr, stringsAsFactors = T)
+  colnames(data) <- c("sens", "target", "pred")
+  
+  data_un <- data[data[, "sens"]==levels(data[, "sens"])[1],]
+  pp_un <- nrow(data_un[data_un[,"target"] == "Good" & data_un[,"pred"]=="Good",])/nrow(data_un)
+  
+  data_priv <- data[data[, "sens"]==levels(data[, "sens"])[2],]
+  pp_priv <- nrow(data_priv[data_priv[,"target"] == "Good" & data_priv[,"pred"]=="Good",])/nrow(data_priv)
+  
+  return (pp_un-pp_priv)
+}
+
+tab.ratio <- function(data){
+  t <- table(data$AGE, data$TARGET)
+  return(paste("The unpriviliged group (A=0) has", round(t[1,2]/(t[1,1]+t[1,2])*100), "% Good Credit Card Owners. The priviliged group (A=1) has",
+               round(t[2,2]/(t[2,1]+t[2,2])*100), "% Good Credit Card Owners."))
 }

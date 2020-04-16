@@ -31,10 +31,19 @@ for (i in 1:nrow(dtest_unscaled)){
 profit <- sum(loanprofit)
 profitPerLoan <- profit/nrow(dtest_unscaled)
 
-statParityDiff <- statParDiff(data = dtest_unscaled, sens.attr = 'AGE', target.attr = 'TARGET')
+# fairness criteria average
+statParityDiff <- statParDiff(sens.attr = dtest_unscaled$AGE, target.attr = rep("Good", nrow(dtest_unscaled)))
+averageOddsDiff <- avgOddsDiff(sens.attr = dtest_unscaled$AGE, target.attr = dtest_unscaled$TARGET, predicted.attr = rep("Good", nrow(dtest_unscaled)))
+predParityDiff <- predParDiff(sens.attr = dtest_unscaled$AGE, target.attr = dtest_unscaled$TARGET, predicted.attr = rep("Good", nrow(dtest_unscaled)))
 
-test_eval <- rbind(AUC, EMP, acceptedLoans, profit, profitPerLoan, statParityDiff)
+cm <- confusionMatrix(data = as.factor(rep("Good", nrow(dtest_unscaled))), reference = dtest_unscaled$TARGET)
+balAccuracy <- cm$byClass[['Balanced Accuracy']]
+
+test_eval <- rbind(AUC, balAccuracy, EMP, acceptedLoans, profit, profitPerLoan, statParityDiff, averageOddsDiff, predParityDiff)
 test_eval
+
+write.csv(test_eval, "5_finalResults/BASE_Results.csv", row.names = T)
+
 
 rm(acceptedLoans, AUC, EMP, loanprofit, p, 
    profit, profitPerLoan, statParityDiff)

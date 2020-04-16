@@ -27,7 +27,8 @@ from sklearn.preprocessing import StandardScaler, MaxAbsScaler
 from sklearn.linear_model import LogisticRegression
 
 ## import prediction results from R BASED ON THE SAME PREDICTIONS FOR COMPARISON
-pred = pd.read_csv(output_path + 'POST_allModels_Rprediction.csv')
+dataset_trainResults_valid = pd.read_csv(output_path + 'taiwan_post_training_results_dval.csv')
+dataset_trainResults_test = pd.read_csv(output_path + 'taiwan_post_training_results_dtest.csv')
 
 ## import dataset
 dataset_orig = load_TaiwanDataset() 
@@ -49,25 +50,35 @@ metric_lb = -0.05
 np.random.seed(1)
 
 # Get the dataset and split into train and test
-dataset_orig_train, dataset_orig_test = dataset_orig.split([0.8], shuffle=True) #should be stratified for target
+dataset_orig_train, dataset_orig_vt = dataset_orig.split([0.7], shuffle=True)
+dataset_orig_valid, dataset_orig_test = dataset_orig_vt.split([0.5], shuffle=True)
 
-# Scale data
+# Scale data and check that the Difference in mean outcomes didn't change
 min_max_scaler = MaxAbsScaler()
 dataset_orig_train.features = min_max_scaler.fit_transform(dataset_orig_train.features)
 dataset_orig_test.features = min_max_scaler.transform(dataset_orig_test.features)
+dataset_orig_valid.features = min_max_scaler.transform(dataset_orig_valid.features)
+
+dataset_orig_valid_pred = dataset_orig_valid.copy(deepcopy=True)
 dataset_orig_test_pred = dataset_orig_test.copy(deepcopy=True)
 
 # Postprocessing
 model_names = ['glm', "svmLinear", "rf", "xgbTree", "nnet"]
-ROC_thresholds = pd.DataFrame()
-EOP_thresholds = pd.DataFrame()
+ROC_test = pd.DataFrame()
+EOP_test = pd.DataFrame()
 
 for m in model_names:
-    scores = np.array(pred[m+'_scores']).reshape(len(pred.index),1)
-    labels = np.where(pred[m+'_class']=='Good', 2.0, 1.0).reshape(len(pred.index),1)
+    scores_valid = np.array(dataset_trainResults_valid[m+'_scores']).reshape(len(dataset_trainResults_valid.index),1)
+    labels_valid = np.where(dataset_trainResults_valid[m+'_class']=='Good', 1.0, 2.0).reshape(len(dataset_trainResults_valid.index),1)
     
-    dataset_orig_test_pred.scores = scores
-    dataset_orig_test_pred.labels = labels
+    scores_test = np.array(dataset_trainResults_test[m+'_scores']).reshape(len(dataset_trainResults_test.index),1)
+    labels_test = np.where(dataset_trainResults_test[m+'_class']=='Good', 1.0, 2.0).reshape(len(dataset_trainResults_test.index),1)
+
+    dataset_orig_valid_pred.scores = scores_valid
+    dataset_orig_valid_pred.labels = labels_valid
+    
+    dataset_orig_test_pred.scores = scores_test
+    dataset_orig_test_pred.labels = labels_test
     
     # Reject Option Classification
     ROC = RejectOptionClassification(unprivileged_groups=unprivileged_groups, 
@@ -76,30 +87,30 @@ for m in model_names:
                                       num_class_thresh=100, num_ROC_margin=50,
                                       metric_name=metric_name,
                                       metric_ub=metric_ub, metric_lb=metric_lb)
-    ROC = ROC.fit(dataset_orig_test, dataset_orig_test_pred)
+    ROC = ROC.fit(dataset_orig_valid, dataset_orig_valid_pred)
+      
+    # ROC_test results
     dataset_transf_test_pred = ROC.predict(dataset_orig_test_pred)
     
-    # print best threshold
-    
-    ROC_thresholds[m+"_fairScores"] = dataset_transf_test_pred.scores.flatten()
+    ROC_test[m+"_fairScores"] = dataset_transf_test_pred.scores.flatten()
     label_names = np.where(dataset_transf_test_pred.labels==1,'Good','Bad')
-    ROC_thresholds[m+"_fairLabels"] = label_names
+    ROC_test[m+"_fairLabels"] = label_names
     
-    # Equality of Odds CHANGE TO CALIBRATED EQUALITY OF ODDS BUT OPTIMIZE FOR DIFFERENT THRESHOLDSS
+    # Equality of Odds
     EOP = EqOddsPostprocessing(unprivileged_groups=unprivileged_groups, 
-                                     privileged_groups=privileged_groups)
-    #EOP = EOP.fit(dataset_orig_test, dataset_orig_test_pred)
-    #dataset_transf_test_pred = EOP.predict(dataset_orig_test_pred)
-    dataset_transf_test_pred = EOP.fit_predict(dataset_orig_test, dataset_orig_test_pred)
+                               privileged_groups=privileged_groups,
+                               loss_name="Balanced accuracy groupwise")
+    EOP = EOP.fit(dataset_orig_valid, dataset_orig_valid_pred)
     
-    # print best threshold
+    # EOP_test results
+    dataset_transf_test_pred = EOP.predict(dataset_orig_test_pred)
     
-    EOP_thresholds[m+"_fairScores"] = dataset_transf_test_pred.scores.flatten()
+    EOP_test[m+"_fairScores"] = dataset_transf_test_pred.scores.flatten()
     label_names = np.where(dataset_transf_test_pred.labels==1,'Good','Bad')
-    EOP_thresholds[m+"_fairLabels"] = label_names  
+    EOP_test[m+"_fairLabels"] = label_names  
 
-ROC_thresholds.to_csv(output_path + 'ROC_POST_thresholds.csv', index = None, header=True)
-EOP_thresholds.to_csv(output_path + 'EOP_POST_thresholds.csv', index = None, header=True)
+ROC_test.to_csv(output_path + 'taiwan_post_roc_results_test.csv', index = None, header=True)
+EOP_test.to_csv(output_path + 'taiwan_post_eop_results_test.csv', index = None, header=True)
 
 
 
