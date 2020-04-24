@@ -19,6 +19,8 @@ dtest_unscaled <- read.csv("3_wipResults/taiwan_orig_test.csv")
 
 dval_pred <- read.csv("3_wipResults/taiwan_in_PRpredictions_valid.csv")
 dtest_pred <- read.csv("3_wipResults/taiwan_in_PRpredictions_test.csv")
+dval_pred <- read.csv("3_wipResults/taiwan_METApredictions_valid_07.csv")
+dtest_pred <- read.csv("3_wipResults/taiwan_METApredictions_test_07.csv")
 
 #---- THRESHOLDING ----
 
@@ -81,7 +83,7 @@ test_eval <- rbind(AUC, balAccuracy, EMP, acceptedLoans, profit, profitPerLoan, 
 
 # Print results
 test_eval
-write.csv(test_eval, "5_finalResults/IN_PrejRemover_Results.csv", row.names = T)
+write.csv(test_eval, "5_finalResults/IN_Meta_Results.csv", row.names = T)
 
 
 

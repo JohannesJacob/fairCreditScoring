@@ -73,7 +73,7 @@ for tau in all_tau:
     print("Tau: %.2f" % tau)
     colname = "tau_" + str(tau)
 
-    debiased_model = MetaFairClassifier(tau=tau, sensitive_attr=s_attr)
+    debiased_model = MetaFairClassifier(tau=tau, sensitive_attr=s_attr, type='fdr')
     debiased_model.fit(dataset_orig_train)
     
     dataset_debiasing_test = debiased_model.predict(dataset_orig_test)
