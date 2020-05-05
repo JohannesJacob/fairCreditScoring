@@ -73,8 +73,8 @@ predParDiff2 <- function(sens.attr = df$AGE, target.attr = df$TARGET, predicted.
   return (pp_un-pp_priv)
 }
 
-tab.ratio <- function(data){
-  t <- table(data$AGE, data$TARGET)
-  return(paste("The unpriviliged group (A=0) has", round(t[1,2]/(t[1,1]+t[1,2])*100), "% Good Credit Card Owners. The priviliged group (A=1) has",
-               round(t[2,2]/(t[2,1]+t[2,2])*100), "% Good Credit Card Owners."))
+tab.ratio <- function(data, sens.attr.name){
+  t <- table(data[, sens.attr.name], data$TARGET)
+  return(list(t,paste("The unpriviliged group (A=0) has", round(t[1,2]/(t[1,1]+t[1,2])*100), "% Good Credit Card Owners. The priviliged group (A=1) has",
+               round(t[2,2]/(t[2,1]+t[2,2])*100), "% Good Credit Card Owners.")))
 }
