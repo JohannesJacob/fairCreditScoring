@@ -12,9 +12,9 @@ packages <- c("caret", "doParallel", "kernlab", "randomForest", "nnet",
 sapply(packages, require, character.only = TRUE)
 
 #Use parallel computing
-  # nrOfCores  <- detectCores()-1
-  # registerDoParallel(cores = nrOfCores)
-  # message(paste("\n Registered number of cores:\n",nrOfCores,"\n"))
+nrOfCores  <- detectCores()-1
+registerDoParallel(cores = nrOfCores)
+message(paste("\n Registered number of cores:\n",nrOfCores,"\n"))
 
 rm(packages, nrOfCores)
 
@@ -76,12 +76,11 @@ args.glm <- list(family = "binomial")
 
 # Create vector of model names to call parameter grid in for-loop
 model.names <- c(
-  "glm"
-  #,
-  #"svmLinear"#, 
-  #"rf", 
-  #"xgbTree"
-  #, "nnet"
+  "glm",
+  "svmLinear", 
+  "rf", 
+  "xgbTree"
+  , "nnet"
 )
 
 #---- TRAINING ----

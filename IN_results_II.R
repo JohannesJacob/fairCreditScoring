@@ -19,8 +19,8 @@ dtest_unscaled <- read.csv("3_wipResults/taiwan_orig_test.csv")
 
 dval_pred <- read.csv("3_wipResults/taiwan_in_PRpredictions_valid.csv")
 dtest_pred <- read.csv("3_wipResults/taiwan_in_PRpredictions_test.csv")
-dval_pred <- read.csv("3_wipResults/taiwan_METApredictions_valid_07.csv")
-dtest_pred <- read.csv("3_wipResults/taiwan_METApredictions_test_07.csv")
+#dval_pred <- read.csv("3_wipResults/taiwan_METApredictions_valid_07.csv")
+#dtest_pred <- read.csv("3_wipResults/taiwan_METApredictions_test_07.csv")
 
 #---- THRESHOLDING ----
 

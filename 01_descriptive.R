@@ -1,3 +1,4 @@
+
 # Unterschiede zwischen den Age Groups
 setwd("C:/Users/Johannes/OneDrive/Dokumente/Humboldt-Universität/Msc WI/1_4. Sem/Master Thesis II/")
 
@@ -32,11 +33,12 @@ ggplot(dscaled, aes(x = LIMIT_BAL)) +
   scale_fill_manual(values = c("#00AFBB", "#E7B800"))
 
 outlier_free <-subset(dorig, CREDIT_AMNT<234661.1 & CREDIT_AMNT>-11243.87)
-ggplot(outlier_free[outlier_free$TARGET=="Bad",], aes(x = CREDIT_AMNT)) +
+ggplot(outlier_free[outlier_free$TARGET=="Bad",], aes(x = LIMIT_BAL)) +
   geom_density(aes(color = AGE, fill = AGE), alpha = 0.4) +
   scale_color_manual(values = c("#00AFBB", "#E7B800")) +
   scale_fill_manual(values = c("#00AFBB", "#E7B800")) +
-  xlab("credit debt in TWD")
+  xlab("credit line in TWD") +
+  theme(text = element_text(size=14))
 
 # Plot
 line <- c("groupA", "groupA", "groupA", "groupB", "groupB", "groupB")

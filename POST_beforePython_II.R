@@ -12,9 +12,9 @@ packages <- c("caret", "doParallel", "kernlab", "randomForest", "nnet",
 sapply(packages, require, character.only = TRUE)
 
 #Use parallel computing
-# nrOfCores  <- detectCores()-1
-# registerDoParallel(cores = nrOfCores)
-# message(paste("\n Registered number of cores:\n",nrOfCores,"\n"))
+nrOfCores  <- detectCores()-1
+registerDoParallel(cores = nrOfCores)
+message(paste("\n Registered number of cores:\n",nrOfCores,"\n"))
 
 rm(packages, nrOfCores)
 
@@ -35,7 +35,7 @@ model.control <- trainControl(
   repeats = 3,
   classProbs = TRUE,
   verboseIter = T,
-  #allowParallel = TRUE,
+  allowParallel = TRUE,
   summaryFunction = creditSummary, #specific FAIR summary metric
   returnData = FALSE #FALSE, to reduce straining memomry 
 )

@@ -19,7 +19,7 @@ def load_TaiwanDataset():
     
     df = df.rename(columns={'default.payment.next.month': 'TARGET'})
     del df['ID']
-    df['AGE'] = df['AGE'].apply(lambda x: np.where(x >= 25, 1.0, 0.0))
+    df['AGE'] = df['AGE'].apply(lambda x: np.where(x > 25, 1.0, 0.0))
     df['CREDIT_AMNT'] = df['BILL_AMT1'] - df['PAY_AMT1']
 
     XD_features = ["LIMIT_BAL","SEX","EDUCATION","MARRIAGE","AGE","PAY_0",
